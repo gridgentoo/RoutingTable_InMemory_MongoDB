@@ -100,8 +100,8 @@ func (l *gracefulListener) waitForClients(timeout time.Duration) error {
 }
 
 func (l *gracefulListener) prepareFd() (fd int, err error) {
-	tl := l.Listener.(*net.TCPListener)
-	fl, err := tl.File()
+	tl := l.Listener.(*net.TCPListener) // creates (?) a TCP network listener
+	fl, err := tl.File()                // gets the os.File associated with the socket
 	if err != nil {
 		return 0, err
 	}
@@ -115,10 +115,13 @@ func (l *gracefulListener) prepareFd() (fd int, err error) {
 	// Setting this back to non-blocking allows this to continue to use the
 	// epoll mechanism meaning that Accept will return an error immediately
 	// when the listener fd is closed.
-	syscall.SetNonblock(int(fl.Fd()), true)
+	// syscall.SetNonblock(int(fl.Fd()), true)
+	fd = int(fl.Fd())
+	syscall.SetNonblock(fd, true)
 
 	// Dup the fd to clear the CloseOnExec flag
-	fd, err = syscall.Dup(int(fl.Fd()))
+	// fd, err = syscall.Dup(int(fl.Fd()))
+	fd, err = syscall.Dup(fd)
 	if err != nil {
 		return 0, err
 	}
